@@ -109,7 +109,7 @@ class Accelerator(object):
             model.backward(closure_loss, optimizer, opt_idx, *args, **kwargs)
 
             # once backward has been applied, release graph
-            closure_loss = closure_loss.detach()
+            # closure_loss = closure_loss.detach()
 
         if not automatic_optimization and self.ddp_plugin is not None:
             # Manually prepare for reduce as user calling backwards manually

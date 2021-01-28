@@ -325,10 +325,10 @@ class TrainLoop:
             else:
                 closure_loss = training_step_output.batch_loss
 
-            closure_loss = closure_loss / self.trainer.accumulate_grad_batches
+            closure_loss = closure_loss #  / self.trainer.accumulate_grad_batches
 
             # the loss will get scaled for amp. avoid any modifications to it
-            untouched_loss = closure_loss.detach().clone()
+            untouched_loss = closure_loss.detach().clone()  ### HERE
 
         # result
         result = AttributeDict(
@@ -686,7 +686,7 @@ class TrainLoop:
                                 optimizer,
                                 self.trainer.hiddens
                             )
-                            return None if result is None else result.loss
+                            return None if result is None else result.closure_loss
 
                         # optimizer step
                         self.optimizer_step(optimizer, opt_idx, batch_idx, train_step_and_backward_closure)
@@ -797,10 +797,10 @@ class TrainLoop:
                 # check if loss or model weights are nan
                 if self.trainer.terminate_on_nan:
                     self.trainer.detect_nan_tensors(result.loss)
-
         return result
 
     def backward(self, result, optimizer, opt_idx, *args, **kwargs):
+        # breakpoint
         self.trainer.dev_debugger.track_event("backward_call")
 
         # backward can be called manually in the training loop
@@ -809,9 +809,11 @@ class TrainLoop:
             result = self.scale_closure_loss(result)
             self.trainer.accelerator_backend.backward(result, optimizer, opt_idx, *args, **kwargs)
         else:
+            # breakpoint() # result.closure_loss has grad_fn
             result.closure_loss = self.trainer.accelerator_backend.backward(
-                result.closure_loss, optimizer, opt_idx, *args, **kwargs
+                result.closure_loss, optimizer, opt_idx, *args, **kwargs,
             )
+            # breakpoint()
 
         if not self.should_accumulate():
             # track gradients
