@@ -15,7 +15,7 @@
 import os
 import warnings
 from functools import wraps
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Callable
 
 import torch
 
@@ -32,7 +32,7 @@ else:
         WORLD = None
 
 
-def rank_zero_only(fn):
+def rank_zero_only(fn: Callable) -> Callable:
 
     @wraps(fn)
     def wrapped_fn(*args, **kwargs):
@@ -169,7 +169,7 @@ def sync_ddp(
 class AllGatherGrad(torch.autograd.Function):
 
     @staticmethod
-    def forward(ctx, tensor, group=group.WORLD):
+    def forward(ctx, tensor: torch.Tensor, group=group.WORLD) -> torch.Tensor:
         ctx.group = group
 
         gathered_tensor = [torch.zeros_like(tensor) for _ in range(torch.distributed.get_world_size())]
@@ -180,7 +180,7 @@ class AllGatherGrad(torch.autograd.Function):
         return gathered_tensor
 
     @staticmethod
-    def backward(ctx, *grad_output):
+    def backward(ctx, *grad_output) -> torch.Tensor:
         grad_output = torch.cat(grad_output)
 
         torch.distributed.all_reduce(grad_output, op=torch.distributed.ReduceOp.SUM, async_op=False, group=ctx.group)

@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader, IterableDataset
 from pytorch_lightning.utilities import rank_zero_warn
 
 
-def has_iterable_dataset(dataloader: DataLoader):
+def has_iterable_dataset(dataloader: DataLoader) -> bool:
     return hasattr(dataloader, 'dataset') and isinstance(dataloader.dataset, IterableDataset)
 
 
