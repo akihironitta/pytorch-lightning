@@ -1148,3 +1148,44 @@ class TesManualOptimizationDDPModelToggleModel(TesManualOptimizationDDPModel):
 @RunIf(min_gpus=2, special=True)
 def test_step_with_optimizer_closure_with_different_frequencies_ddp_with_toggle_model(tmpdir):
     train_manual_optimization(tmpdir, "ddp", model_cls=TesManualOptimizationDDPModelToggleModel)
+
+
+def test_manual_optimization_scheduler_step(tmpdir):
+    """
+    Test `scheduler.step` is called only manually.
+    """
+    class TestModel(BoringModel):
+        def __init__(self):
+            super().__init__()
+            self.automatic_optimization = False
+
+        def training_step(self, batch, batch_idx):
+            optimizer = self.optimizers()
+            lr_scheduler = self.lr_schedulers()
+
+            output = self(batch)
+            loss = self.loss(batch, output)
+
+            optimizer.zero_grad()
+            self.manual_backward(loss)
+            optimizer.step()
+            lr_scheduler.step()
+
+    model = TestModel()
+    model.training_step_end = None
+    model.training_epoch_end = None
+
+    trainer = Trainer(
+        max_epochs=1,
+        default_root_dir=tmpdir,
+        limit_train_batches=20,
+        limit_test_batches=1,
+        limit_val_batches=1,
+        accumulate_grad_batches=4,
+    )
+    with patch("torch.optim.SGD.step") as opt_step, \
+         patch("torch.optim.lr_scheduler.StepLR.step") as lr_step:
+        trainer.fit(model)
+
+    assert opt_step.call_count == 20
+    assert lr_step.call_count == 20
