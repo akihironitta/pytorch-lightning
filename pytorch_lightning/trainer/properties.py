@@ -375,8 +375,8 @@ class TrainerProperties(ABC):
         return self.accelerator.lr_schedulers
 
     @lr_schedulers.setter
-    def lr_schedulers(self, new_schedulers: Optional[list]) -> None:
-        self.accelerator.lr_schedulers = new_schedulers
+    def lr_schedulers(self, new_lr_schedulers: Optional[list]) -> None:
+        self.accelerator.lr_schedulers = new_lr_schedulers
 
     @property
     def optimizer_frequencies(self) -> list:
